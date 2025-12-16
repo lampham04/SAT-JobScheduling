@@ -4,6 +4,21 @@ from pysat.card import CardEnc, EncType
 from pypblib import pblib
 from pathlib import Path
 from collections import deque
+import pandas as pd
+
+# READ filename
+def read_filenames(path):
+    df = pd.read_excel(path, engine="xlrd")
+
+    df["OPT VALUE"] = pd.to_numeric(df["OPT VALUE"], errors="coerce")
+
+    df_filtered = df[(df["OPT VALUE"] <= 1000) & (df["PT"] == "S")]
+    df_filtered = df_filtered.reset_index(drop=True)
+
+    filenames = df_filtered["filename"].tolist()
+
+    return df_filtered, filenames
+
 
 ### Read in dataset
 def read_dataset(path):
@@ -369,7 +384,7 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
                     i, t = var_to_S[model[j]]
                     tardy = max(0, t + durations[i] - due_dates[i])
                     total_weight += tardy * weights[i]
-            print("Total weight:", total_weight)
+            print("New UB:", total_weight)
             # last_UB = total_weight
             UB = total_weight
         else:
@@ -385,10 +400,14 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
 if __name__ == "__main__":
 
     BASE_DIR = Path(__file__).resolve().parent
-    DATASET_PATH = BASE_DIR / "datasets" / "30_05_050_100_00_2.GSP"
+
+    # Read filenames
+    XLS_PATH = BASE_DIR / "datasets" / "Results30-40-50.xls"
+    df_filtered, filenames = read_filenames(XLS_PATH)
 
     # Read dataset
-    n, weights, durations, ready_dates, due_dates, deadlines, successors = read_dataset(DATASET_PATH)
+    FILE_PATH = BASE_DIR / "datasets" / "S" / filenames[0]
+    n, weights, durations, ready_dates, due_dates, deadlines, successors = read_dataset(FILE_PATH)
 
     # Window Tightening
     new_ready_dates, new_deadlines = window_tightening(n, ready_dates, durations, deadlines, successors)

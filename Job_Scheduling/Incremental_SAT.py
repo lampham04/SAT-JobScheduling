@@ -321,8 +321,76 @@ def compute_UB(schedule, durations, weights, due_dates):
 
     return UB
 
+def validate_schedule(
+    schedule,
+    durations,
+    ready_dates,
+    deadlines,
+    successors,
+    verbose=True
+):
+    """
+    schedule   : dict {job: start_time}
+    durations  : dict {job: processing_time}
+    ready_dates: dict {job: ready_time}
+    deadlines  : dict {job: deadline}
+    successors : dict {job: list of successor jobs}
+    """
 
-def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_id):
+    jobs = set(durations.keys())
+
+    # 1. All jobs scheduled
+    if set(schedule.keys()) != jobs:
+        missing = jobs - set(schedule.keys())
+        extra = set(schedule.keys()) - jobs
+        if verbose:
+            if missing:
+                print("❌ Missing jobs:", sorted(missing))
+            if extra:
+                print("❌ Unknown jobs:", sorted(extra))
+        return False
+
+    # 2. Ready date + deadline constraints
+    for i, s in schedule.items():
+        if s < ready_dates[i]:
+            if verbose:
+                print(f"❌ Job {i} starts before ready date: {s} < {ready_dates[i]}")
+            return False
+
+        if s + durations[i] > deadlines[i]:
+            if verbose:
+                print(f"❌ Job {i} misses deadline: "
+                      f"end={s + durations[i]} > d={deadlines[i]}")
+            return False
+
+    # 3. Precedence constraints
+    for i, succs in successors.items():
+        for j in succs:
+            if schedule[i] + durations[i] > schedule[j]:
+                if verbose:
+                    print(f"❌ Precedence violated: {i} → {j} "
+                          f"({schedule[i] + durations[i]} > {schedule[j]})")
+                return False
+
+    # 4. Single-machine (no overlap)
+    intervals = sorted(
+        ((s, s + durations[i], i) for i, s in schedule.items()),
+        key=lambda x: x[0]
+    )
+
+    for (_, end_prev, i_prev), (start, _, i_curr) in zip(intervals, intervals[1:]):
+        if start < end_prev:
+            if verbose:
+                print(f"❌ Overlap: job {i_prev} and job {i_curr}")
+            return False
+
+    if verbose:
+        print("✅ Schedule is VALID")
+
+    return True
+
+
+def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_id, ready_dates, deadlines, successors):
     config = pblib.PBConfig()
     pb2 = pblib.Pb2cnf(config)
     formula = []
@@ -331,7 +399,7 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
     tardiness_weights = []
 
     for i, times in valid.items():
-        w_i = weights.get(i, 1)
+        w_i = weights[i]
         p_i = durations[i]
         d_i = due_dates[i]
 
@@ -378,12 +446,19 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
             print("SAT")
             model = solver.get_model()
             total_weight = 0
+            best_schedule = {}
 
             for j in range(0, len(S)):
                 if model[j] > 0:
                     i, t = var_to_S[model[j]]
                     tardy = max(0, t + durations[i] - due_dates[i])
                     total_weight += tardy * weights[i]
+                    best_schedule[i] = t
+            print(best_schedule)
+            print(ready_dates)
+            print(durations)
+            print(deadlines)
+            print(due_dates)
             print("New UB:", total_weight)
             # last_UB = total_weight
             UB = total_weight
@@ -397,16 +472,19 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
 
 
 
+
+
+
 if __name__ == "__main__":
 
     BASE_DIR = Path(__file__).resolve().parent
 
-    # Read filenames
-    XLS_PATH = BASE_DIR / "datasets" / "Results30-40-50.xls"
-    df_filtered, filenames = read_filenames(XLS_PATH)
+    # # Read filenames
+    # XLS_PATH = BASE_DIR / "datasets" / "Results30-40-50.xls"
+    # df_filtered, filenames = read_filenames(XLS_PATH)
 
     # Read dataset
-    FILE_PATH = BASE_DIR / "datasets" / "S" / filenames[0]
+    FILE_PATH = BASE_DIR / "datasets" / "S" / "30_10_025_100_00_2.GSP"
     n, weights, durations, ready_dates, due_dates, deadlines, successors = read_dataset(FILE_PATH)
 
     # Window Tightening
@@ -416,7 +494,7 @@ if __name__ == "__main__":
     cnf, next_var, schedule, valid, S = solve_SAT(n, durations, new_ready_dates, new_deadlines, successors)
 
     # Compute UB
-    UB = compute_UB(schedule, durations, weights, due_dates)
+    UB = 134 #compute_UB(schedule, durations, weights, due_dates)
 
     # Incremental SAT
-    incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var)
+    incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var, ready_dates, deadlines, successors)

@@ -305,6 +305,75 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
 
     return cnf, var_counter, schedule, valid, S, is_sat
 
+def validate_schedule(
+    schedule,
+    durations,
+    ready_dates,
+    deadlines,
+    successors,
+    verbose=True
+):
+    """
+    schedule   : dict {job: start_time}
+    durations  : dict {job: processing_time}
+    ready_dates: dict {job: ready_time}
+    deadlines  : dict {job: deadline}
+    successors : dict {job: list of successor jobs}
+    """
+
+    jobs = set(durations.keys())
+
+    # 1. All jobs scheduled
+    if set(schedule.keys()) != jobs:
+        missing = jobs - set(schedule.keys())
+        extra = set(schedule.keys()) - jobs
+        if verbose:
+            if missing:
+                print("❌ Missing jobs:", sorted(missing))
+            if extra:
+                print("❌ Unknown jobs:", sorted(extra))
+        return False
+
+    # 2. Ready date + deadline constraints
+    for i, s in schedule.items():
+        if s < ready_dates[i]:
+            if verbose:
+                print(f"❌ Job {i} starts before ready date: {s} < {ready_dates[i]}")
+            return False
+
+        if s + durations[i] > deadlines[i]:
+            if verbose:
+                print(f"❌ Job {i} misses deadline: "
+                      f"end={s + durations[i]} > d={deadlines[i]}")
+            return False
+
+    # 3. Precedence constraints
+    for i, succs in successors.items():
+        for j in succs:
+            if schedule[i] + durations[i] > schedule[j]:
+                if verbose:
+                    print(f"❌ Precedence violated: {i} → {j} "
+                          f"({schedule[i] + durations[i]} > {schedule[j]})")
+                return False
+
+    # 4. Single-machine (no overlap)
+    intervals = sorted(
+        ((s, s + durations[i], i) for i, s in schedule.items()),
+        key=lambda x: x[0]
+    )
+
+    for (_, end_prev, i_prev), (start, _, i_curr) in zip(intervals, intervals[1:]):
+        if start < end_prev:
+            if verbose:
+                print(f"❌ Overlap: job {i_prev} and job {i_curr}")
+            return False
+
+    if verbose:
+        print("✅ Schedule is VALID")
+
+    return True
+
+
 
 def compute_UB(schedule, durations, weights, due_dates):
     UB = 0
@@ -317,7 +386,7 @@ def compute_UB(schedule, durations, weights, due_dates):
     return UB
 
 
-def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_id, ub_file):
+def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_id, ub_file, ready_dates, deadlines, successors):
     config = pblib.PBConfig()
     pb2 = pblib.Pb2cnf(config)
     formula = []
@@ -373,16 +442,21 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
             print("SAT")
             model = solver.get_model()
             total_weight = 0
+            best_schedule = {}
 
             for j in range(0, len(S)):
                 if model[j] > 0:
                     i, t = var_to_S[model[j]]
                     tardy = max(0, t + durations[i] - due_dates[i])
-                    total_weight += tardy * weights[i]
-            print("New UB:", total_weight)
-            UB = total_weight
-            with open(ub_file, "w") as f:
-                f.write(str(UB))
+                    total_weight += (tardy * weights[i])
+                    best_schedule[i] = t
+            is_schedule_valid = validate_schedule(best_schedule, durations, ready_dates, deadlines, successors)
+            if is_schedule_valid:
+                print("New UB:", total_weight)
+                UB = total_weight
+                with open(ub_file, "w") as f:
+                    f.write(str(UB))
+            
         else:
             print("UNSAT")
             break

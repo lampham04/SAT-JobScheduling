@@ -56,7 +56,10 @@ def main():
         UB,
         valid,
         next_var,
-        ub_file
+        ub_file,
+        ready_dates,
+        deadlines,
+        successors
     )
 
 

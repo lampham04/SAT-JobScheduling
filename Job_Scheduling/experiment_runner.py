@@ -25,17 +25,21 @@ TIMEOUT = 600  # seconds
 def read_filenames(xls_path):
     df = pd.read_excel(xls_path, engine="xlrd")
 
-    # normalize column names if needed
+    # normalize column names
     df.columns = [c.strip() for c in df.columns]
 
     # keep valid OPT values
     df["OPT VALUE"] = pd.to_numeric(df["OPT VALUE"], errors="coerce")
 
-    df = df[df["OPT VALUE"].notna()]
-    df = df[df["OPT VALUE"] <= 1000]
+    df = df[
+        (df["OPT VALUE"].notna()) &
+        (df["OPT VALUE"] <= 1000) &
+        (df["PT"] == "S")
+    ]
 
     filenames = df["filename"].astype(str).tolist()
     return df, filenames
+
 
 
 # ==============================

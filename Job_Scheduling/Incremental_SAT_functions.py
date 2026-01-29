@@ -143,13 +143,7 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
 
     for i in jobs:
         r_i = ready_dates[i]
-        p_i = durations[i]
         dl_i = deadlines[i]
-
-        last_start = dl_i - p_i
-        if last_start < r_i:
-            print(f"Job {i} impossible: last_start < ready ({last_start} < {r_i})")
-            return False, None
 
         # A defined for t in [r_i, dl_i-1]
         for t in range(r_i, dl_i):
@@ -169,7 +163,7 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
         total_start_once_clauses += len(enc.clauses)
         # update var_counter to next free id
         var_counter = enc.nv + 1
-    print("Start-once clauses (total): ", total_start_once_clauses, ". Next var id = ", var_counter)
+    print(f"Start-once clauses: {total_start_once_clauses}. Next var id = {var_counter}")
 
     # ------------------------
     # 3) Activation S -> A
@@ -184,7 +178,7 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
                     # clause: ¬S[i,t0] ∨ A[i,t]
                     cnf.append([-s_lit, A[(i,t)]])
                     s_to_a_clauses += 1
-    print("S->A clauses: ", s_to_a_clauses)
+    print("S->A clauses:", s_to_a_clauses)
 
     # ------------------------
     # 4) Capacity: at most one active at each time t using CardEnc.atmost with top_id
@@ -197,7 +191,7 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
             cnf.extend(enc.clauses)
             cap_clauses += len(enc.clauses)
             var_counter = enc.nv + 1
-    print("Capacity clauses (total): ", cap_clauses, ". Next var id = ", var_counter)
+    print(f"Capacity clauses: {cap_clauses}. Next var id = {var_counter}")
 
     # ------------------------
     # 5) Build SC prefix variables and clauses (SC[j,t] = ∃u ≤ t: S[j,u] = 1)
@@ -247,8 +241,8 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
             cnf.append(clause)
             sc_reverse_count += 1
 
-    print(f"SC vars created: {sc_count}, S->SC: {s_to_sc_count}, SC chain: {sc_chain_count}, SC reverse: {sc_reverse_count}")
-    print("next var id after SC creation: ", var_counter)
+    print(f"SC vars created: {sc_count}, SC clauses: {s_to_sc_count + sc_chain_count + sc_reverse_count}")
+    print("Next var id after SC creation:", var_counter)
     # ------------------------
     # 6) Precedence constraints: For i -> j, forbid SC[j,finish] when S[i,t_i] = 1
     #    Clause: ¬S[i,t_i] ∨ ¬SC[j, finish]  only when finish in SC domain
@@ -270,7 +264,7 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
                     continue
                 cnf.append([-S[(i,t_i)], -SC[(j, finish)]])
                 prec_clauses += 1
-    print("Precedence clauses: ", prec_clauses)
+    print("Precedence clauses:", prec_clauses)
 
 
     # ------------------------
@@ -282,7 +276,7 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
 
     if not is_sat:
         print("UNSAT — no feasible schedule.")
-        return None, None, None, None, None. is_sat
+        return None, None, None, None, None, is_sat
     
     model = set(solver.get_model())
 
@@ -292,16 +286,8 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
         if vid in model:
             schedule[i] = t
 
-    # # print schedule ordered by start
-    # order = sorted(schedule.items(), key=lambda x: x[1])
-    print("\nFeasible schedule found:")
+    print("\nFeasible schedule found")
     solver.delete()
-    # print("{:<8} {:<10} {:<10}".format("Job", "Start", "End"))
-    # print("-"*32)
-    # for i, st in order:
-    #     en = st + durations[i]
-    #     print("{:<8} {:<10} {:<10}".format(i, st, en))
-    # print("\nJob order:", [i for i,_ in order])
 
     return cnf, var_counter, schedule, valid, S, is_sat
 
@@ -310,68 +296,85 @@ def validate_schedule(
     durations,
     ready_dates,
     deadlines,
-    successors,
-    verbose=True
+    successors
 ):
     """
+    Validate a schedule for hard constraints.
+
     schedule   : dict {job: start_time}
-    durations  : dict {job: processing_time}
-    ready_dates: dict {job: ready_time}
-    deadlines  : dict {job: deadline}
-    successors : dict {job: list of successor jobs}
+    jobs       : list of jobs
+    durations  : dict {job: p_i}
+    ready_dates: dict {job: r_i}
+    deadlines  : dict {job: δ_i}
+    successors : dict {i: [j1, j2, ...]}
+
+    Returns:
+        (is_valid: bool, violations: list of strings)
     """
 
-    jobs = set(durations.keys())
+    jobs = list(range(1, len(schedule) + 1))
+    violations = []
 
-    # 1. All jobs scheduled
-    if set(schedule.keys()) != jobs:
-        missing = jobs - set(schedule.keys())
-        extra = set(schedule.keys()) - jobs
-        if verbose:
-            if missing:
-                print("❌ Missing jobs:", sorted(missing))
-            if extra:
-                print("❌ Unknown jobs:", sorted(extra))
-        return False
+    # -------------------------
+    # 0) All jobs scheduled?
+    # -------------------------
+    for i in jobs:
+        if i not in schedule:
+            violations.append(f"Job {i} has no start time")
 
-    # 2. Ready date + deadline constraints
-    for i, s in schedule.items():
-        if s < ready_dates[i]:
-            if verbose:
-                print(f"❌ Job {i} starts before ready date: {s} < {ready_dates[i]}")
-            return False
+    if violations:
+        return violations
 
-        if s + durations[i] > deadlines[i]:
-            if verbose:
-                print(f"❌ Job {i} misses deadline: "
-                      f"end={s + durations[i]} > d={deadlines[i]}")
-            return False
+    # -------------------------
+    # 1) Release date + deadline
+    # -------------------------
+    for i in jobs:
+        start = schedule[i]
+        end = start + durations[i]
 
-    # 3. Precedence constraints
-    for i, succs in successors.items():
-        for j in succs:
+        if start < ready_dates[i]:
+            violations.append(
+                f"Release violation: job {i}, start={start}, r_i={ready_dates[i]}"
+            )
+
+        if end > deadlines[i]:
+            violations.append(
+                f"Deadline violation: job {i}, end={end}, δ_i={deadlines[i]}"
+            )
+
+    # -------------------------
+    # 2) One-machine constraint
+    # -------------------------
+    intervals = []
+    for i in jobs:
+        intervals.append((schedule[i], schedule[i] + durations[i], i))
+
+    intervals.sort()  # sort by start time
+
+    for k in range(len(intervals) - 1):
+        s1, e1, i1 = intervals[k]
+        s2, e2, i2 = intervals[k + 1]
+
+        if e1 > s2:
+            violations.append(
+                f"Machine overlap: job {i1} [{s1},{e1}) overlaps job {i2} [{s2},{e2})"
+            )
+
+    # -------------------------
+    # 3) Precedence constraints
+    # -------------------------
+    for i in successors:
+        for j in successors[i]:
             if schedule[i] + durations[i] > schedule[j]:
-                if verbose:
-                    print(f"❌ Precedence violated: {i} → {j} "
-                          f"({schedule[i] + durations[i]} > {schedule[j]})")
-                return False
+                violations.append(
+                    f"Precedence violated: {i} ≺ {j}, "
+                    f"Ci={schedule[i] + durations[i]}, Sj={schedule[j]}"
+                )
 
-    # 4. Single-machine (no overlap)
-    intervals = sorted(
-        ((s, s + durations[i], i) for i, s in schedule.items()),
-        key=lambda x: x[0]
-    )
-
-    for (_, end_prev, i_prev), (start, _, i_curr) in zip(intervals, intervals[1:]):
-        if start < end_prev:
-            if verbose:
-                print(f"❌ Overlap: job {i_prev} and job {i_curr}")
-            return False
-
-    if verbose:
-        print("✅ Schedule is VALID")
-
-    return True
+    # -------------------------
+    # Final result
+    # -------------------------
+    return violations
 
 
 
@@ -384,6 +387,17 @@ def compute_UB(schedule, durations, weights, due_dates):
     print("UB: ", UB)
 
     return UB
+
+def compute_UB_Lmax(schedule, durations, due_dates):
+    Lmax = 0
+    for i in schedule:
+        L = max(0, schedule[i] + durations[i] - due_dates[i])
+        if L > Lmax:
+            Lmax = L
+
+    print("Lmax UB: ", Lmax)
+
+    return Lmax
 
 
 def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_id, ub_file, ready_dates, deadlines, successors):
@@ -416,9 +430,9 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
     lits = tardiness_lits + x_vars
     new_weights = tardiness_weights + [1] * len(x_vars)
 
-    print("Encoding UB constraints")
+    print("Encoding Incremental SAT constraints...")
     max_var = pb2.encode_leq(new_weights, lits, UB, formula, next_var_id)
-    print("UB constraints encoded")
+    print("Incremental SAT constraints encoded")
     cnf.extend(formula)
     next_var_id = max_var
 
@@ -448,15 +462,20 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
                 if model[j] > 0:
                     i, t = var_to_S[model[j]]
                     tardy = max(0, t + durations[i] - due_dates[i])
-                    total_weight += (tardy * weights[i])
+                    total_weight += (tardy * 1)
                     best_schedule[i] = t
-            is_schedule_valid = validate_schedule(best_schedule, durations, ready_dates, deadlines, successors)
-            if is_schedule_valid:
+            violations = validate_schedule(best_schedule, durations, ready_dates, deadlines, successors)
+            if len(violations) == 0:
                 print("New UB:", total_weight)
                 UB = total_weight
                 with open(ub_file, "w") as f:
                     f.write(str(UB))
-            
+                # print out schedule
+                for i, start in sorted(best_schedule.items(), key=lambda x: x[1]):
+                    print(f"Job {i}: start = {start}, end = {start + durations[i]}")
+            else:
+                print(violations)
+                break
         else:
             print("UNSAT")
             break
@@ -464,4 +483,62 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
     solver.delete()
     print("Incremental SAT finished.")
     print("Best UB found:", UB)
+
+
+def incremental_SAT_Lmax(durations, weights, due_dates, S, cnf, UB, ub_file, ready_dates, deadlines, successors):
+    solver = Solver(name='g421', bootstrap_with=cnf)
+    MAX_ITERATION = 100
+    iteration_count = 0
+    var_to_S = {v: (i, t) for (i, t), v in S.items()}
+
+    while True:
+        if iteration_count == MAX_ITERATION or UB <= 0:
+            break
+        iteration_count += 1
+        print("\n==============================")
+        print("Trying with Lmax UB =", UB)
+        print("Iteration:", iteration_count)
+
+        # add not S[i,t] that can violate Lmax UB for each iteration
+        for (i, t), vid in S.items():
+            if t + durations[i] - due_dates[i] >= UB:
+                solver.add_clause([-vid])  
+
+        if solver.solve():
+            print("SAT")
+            model = solver.get_model()
+            best_schedule = {}
+            Lmax = 0
+
+            for j in range(0, len(S)):
+                if model[j] > 0:
+                    i, t = var_to_S[model[j]]
+                    L = max(0, t + durations[i] - due_dates[i])
+                    if L > Lmax:
+                        Lmax = L
+                    best_schedule[i] = t
+            violations = validate_schedule(best_schedule, durations, ready_dates, deadlines, successors)
+            if len(violations) == 0:
+                if Lmax < UB:
+                    print("New Lmax UB:", Lmax)
+                    UB = Lmax
+                    with open(ub_file, "w") as f:
+                        f.write(str(UB))
+                    compute_UB(best_schedule, durations, weights, due_dates)
+                    # print out schedule
+                    for i, start in sorted(best_schedule.items(), key=lambda x: x[1]):
+                        print(f"Job {i}: start = {start}, end = {start + durations[i]}")
+                else:
+                    break
+            else:
+                print(violations)
+                break
+        else:
+            print("UNSAT")
+            break
+
+    solver.delete()
+    print("Incremental SAT finished.")
+    print("Best Lmax UB found:", UB)
+
 

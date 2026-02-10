@@ -1,13 +1,12 @@
 # run_one_instance.py
 import sys
 from pathlib import Path
-
 from Incremental_SAT_functions import (
     read_dataset,
     window_tightening,
     solve_SAT,
-    compute_UB,
-    incremental_SAT
+    compute_UB_Lmax,
+    incremental_SAT_Lmax
 )
 
 
@@ -17,7 +16,7 @@ def main():
         sys.exit(1)
 
     instance_path = Path(sys.argv[1])
-    ub_file = Path(sys.argv[2])
+    sol_file = Path(sys.argv[2])
 
     # -------- Pipeline --------
 
@@ -36,30 +35,14 @@ def main():
     )
 
     if not is_sat:
-        ub_file.write_text("UNSAT")
+        sol_file.write_text("UNSAT")
         return
 
     # Initial UB
-    UB = compute_UB(schedule, durations, weights, due_dates)
-
-    # Save initial UB
-    ub_file.write_text(str(UB))
+    UB = compute_UB_Lmax(schedule, durations, due_dates)
 
     # Incremental SAT (UB được cập nhật & ghi file bên trong)
-    incremental_SAT(
-        weights,
-        durations,
-        due_dates,
-        S,
-        cnf,
-        UB,
-        valid,
-        next_var,
-        ub_file,
-        ready_dates,
-        deadlines,
-        successors
-    )
+    incremental_SAT_Lmax(durations, due_dates, S, cnf, UB, sol_file, new_ready_dates, new_deadlines, successors)
 
 
 if __name__ == "__main__":

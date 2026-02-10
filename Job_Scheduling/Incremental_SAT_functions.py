@@ -485,7 +485,7 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
     print("Best UB found:", UB)
 
 
-def incremental_SAT_Lmax(durations, weights, due_dates, S, cnf, UB, ub_file, ready_dates, deadlines, successors):
+def incremental_SAT_Lmax(durations, due_dates, S, cnf, UB, sol_file, ready_dates, deadlines, successors):
     solver = Solver(name='g421', bootstrap_with=cnf)
     MAX_ITERATION = 100
     iteration_count = 0
@@ -522,12 +522,12 @@ def incremental_SAT_Lmax(durations, weights, due_dates, S, cnf, UB, ub_file, rea
                 if Lmax < UB:
                     print("New Lmax UB:", Lmax)
                     UB = Lmax
-                    with open(ub_file, "w") as f:
-                        f.write(str(UB))
-                    compute_UB(best_schedule, durations, weights, due_dates)
-                    # print out schedule
-                    for i, start in sorted(best_schedule.items(), key=lambda x: x[1]):
-                        print(f"Job {i}: start = {start}, end = {start + durations[i]}")
+                    with open(sol_file, "w") as f:
+                        f.write(f"Lmax = {str(UB)} \n")
+                        f.write("Schedule: \n")
+                        for i, start in sorted(best_schedule.items(), key=lambda x: x[1]):
+                            #print(f"Job {i}: start = {start}, end = {start + durations[i]}")
+                            f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
                 else:
                     break
             else:

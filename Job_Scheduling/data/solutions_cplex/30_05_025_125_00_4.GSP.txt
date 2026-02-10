@@ -1,0 +1,32 @@
+Lmax = 49.99998999321251 
+Schedule: 
+Job 1: start = 1.0, end = 7.0 
+Job 8: start = 7.0, end = 11.0 
+Job 3: start = 11.0, end = 18.0 
+Job 4: start = 18.0, end = 20.0 
+Job 23: start = 20.0, end = 25.0 
+Job 2: start = 25.0, end = 27.0 
+Job 5: start = 27.0, end = 31.0 
+Job 21: start = 31.0, end = 32.0 
+Job 7: start = 32.0, end = 40.0 
+Job 6: start = 40.0, end = 41.0 
+Job 9: start = 41.0, end = 50.0 
+Job 26: start = 50.0, end = 51.0 
+Job 10: start = 51.0, end = 53.0 
+Job 11: start = 53.0, end = 55.0 
+Job 17: start = 55.0, end = 62.0 
+Job 12: start = 62.0, end = 70.0 
+Job 19: start = 70.0, end = 76.0 
+Job 14: start = 76.0, end = 82.0 
+Job 25: start = 82.0, end = 89.0 
+Job 18: start = 89.0, end = 97.0 
+Job 22: start = 96.99998999321251, end = 97.99998999321251 
+Job 16: start = 97.99998999321251, end = 103.99998999321251 
+Job 28: start = 103.99998999321251, end = 111.99998999321251 
+Job 13: start = 111.99998999321251, end = 114.99998999321251 
+Job 15: start = 114.99998999321251, end = 117.99998999321251 
+Job 24: start = 117.99998999321251, end = 125.99998999321251 
+Job 30: start = 125.99998999321252, end = 126.99998999321252 
+Job 20: start = 126.99998999321252, end = 135.99998999321252 
+Job 27: start = 135.99998999321252, end = 138.99998999321252 
+Job 29: start = 138.99998999321252, end = 147.99998999321252 

@@ -1,6 +1,6 @@
 from docplex.mp.model import Model
-
-from Incremental_SAT_functions import (read_dataset, window_tightening)
+import numpy as np
+from Incremental_SAT_functions import (read_dataset, window_tightening, validate_schedule)
 
 def solve_Lmax_cplex(n, durations, ready_dates, deadlines, due_dates, successors, sol_file, time_limit):
     """
@@ -78,19 +78,23 @@ def solve_Lmax_cplex(n, durations, ready_dates, deadlines, due_dates, successors
     if not sol:
         print("❌ No feasible schedule")
 
-    schedule = {i: sol[S[i]] for i in jobs}
+    schedule = {i: int(np.round(sol[S[i]])) for i in jobs}
+    violations = validate_schedule(schedule, durations, ready_dates, deadlines, successors)
 
-    with open(sol_file, "w") as f:
-        f.write(f"Lmax = {str(sol[Lmax])} \n")
-        f.write("Schedule: \n")
-        for i, start in sorted(schedule.items(), key=lambda x: x[1]):
-            #print(f"Job {i}: start = {start}, end = {start + durations[i]}")
-            f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
+    if (len(violations) == 0):
+        with open(sol_file, "w") as f:
+            f.write(f"Lmax = {int(np.round(sol[Lmax]))} \n")
+            f.write("Schedule: \n")
+            for i, start in sorted(schedule.items(), key=lambda x: x[1]):
+                #print(f"Job {i}: start = {start}, end = {start + durations[i]}")
+                f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
+    else:
+        print("Violations:", violations)
 
 
 def main():
-    instance_path = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\datasets\30_05_025_125_00_4.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\solutions_cplex\30_05_025_125_00_4.GSP.txt"
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\datasets\30_05_050_150_00_3.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\solutions_cplex\30_05_050_150_00_3.GSP.txt"
 
     # -------- Pipeline --------
 
@@ -103,7 +107,7 @@ def main():
     n, ready_dates, durations, deadlines, successors
     )
 
-    solve_Lmax_cplex(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, 10)
+    solve_Lmax_cplex(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, 30)
 
 if __name__ == "__main__":
     main()

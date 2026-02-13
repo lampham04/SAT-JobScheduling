@@ -437,13 +437,12 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
     next_var_id = max_var
 
     solver = Solver(name='g421', bootstrap_with=cnf)
-    MAX_ITERATION = 100
     iteration_count = 0
     var_to_S = {v: (i, t) for (i, t), v in S.items()}
 
 
     while True:
-        if iteration_count == MAX_ITERATION or UB <= 0:
+        if UB <= 0:
             break
         iteration_count += 1
         print("\n==============================")
@@ -487,12 +486,11 @@ def incremental_SAT(weights, durations, due_dates, S, cnf, UB, valid, next_var_i
 
 def incremental_SAT_Lmax(durations, due_dates, S, cnf, UB, sol_file, ready_dates, deadlines, successors):
     solver = Solver(name='g421', bootstrap_with=cnf)
-    MAX_ITERATION = 100
     iteration_count = 0
     var_to_S = {v: (i, t) for (i, t), v in S.items()}
 
     while True:
-        if iteration_count == MAX_ITERATION or UB <= 0:
+        if UB <= 0:
             break
         iteration_count += 1
         print("\n==============================")

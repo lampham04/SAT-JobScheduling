@@ -19,7 +19,7 @@ SHEET_NAME = "50 jobs"
 INSTANCE_TYPE = "S"
 RESULT_CSV = BASE_DIR / ".." / "data"/ "results" / "results_Lmax_cplex.csv"
 
-TIMEOUT = 600  # seconds
+TIMEOUT = 601  # seconds
 
 def main():
 

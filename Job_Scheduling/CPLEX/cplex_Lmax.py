@@ -279,8 +279,8 @@ def read_filenames(xls_path, sheetname, instance_type):
 
 
 def main():
-    instance_path = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\datasets\\50-S\\50_00_005_100_00_3.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\solutions_cplex\\50-S\\50_00_005_100_00_3.GSP.txt"
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\datasets\\50-S\\50_00_005_150_75_2.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\solutions_cplex\\50-S\\50_00_005_150_75_2.GSP.txt"
 
     # -------- Pipeline --------
 

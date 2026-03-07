@@ -1,5 +1,5 @@
 from pysat.formula import CNF
-from pysat.solvers import Solver   
+from pysat.solvers import Solver 
 from pysat.card import CardEnc, EncType
 from pypblib import pblib
 from collections import deque

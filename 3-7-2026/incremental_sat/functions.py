@@ -347,7 +347,6 @@ def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, ready_da
         print("Trying with Lmax UB =", UB)
         print("Iteration:", iteration_count)
 
-        # add not S[i,t] that can violate Lmax UB for each iteration
         for j in range(1, len(durations) + 1):
             if(due_dates[j] + UB - durations[j] - 1 < valid_starts[j][-1]):
                 solver.add_clause([L[j, due_dates[j] + UB - durations[j]] - 1])

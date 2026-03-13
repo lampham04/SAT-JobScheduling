@@ -41,7 +41,7 @@ def main():
     UB = compute_UB_Lmax(schedule, durations, due_dates)
 
     # Incremental SAT
-    incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, new_ready_dates, new_deadlines, successors, valid_starts)
+    incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_starts)
 
 
 if __name__ == "__main__":

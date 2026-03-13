@@ -67,7 +67,7 @@ def main():
         elapsed = time.time() - start
 
         # read UB
-        our_ub = None
+        our_ub = '-'
 
         try:
             lines = sol_file.read_text().splitlines()

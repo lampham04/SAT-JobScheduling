@@ -87,7 +87,7 @@ def window_tightening(n, ready_dates, durations, deadlines, successors):
 
 
 # Solve for SAT
-def solve_SAT(n, durations, ready_dates, deadlines, successors):
+def solve_SAT(n, durations, ready_dates, deadlines, successors, verbose=False):
     jobs = list(range(1, n+1))
     horizon = max(deadlines.values())
 
@@ -106,8 +106,9 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
     for i in jobs:
         last_start = deadlines[i] - durations[i]
         if last_start < ready_dates[i]:
-            print(f"Job {i} impossible: last_start < ready ({last_start} < {ready_dates[i]})")
-            return 
+            if (verbose):
+                print(f"Job {i} impossible: last_start < ready ({last_start} < {ready_dates[i]})")
+            return None, None, None, None, None, False
 
         valid_starts[i] = list(range(ready_dates[i], last_start + 1))
 
@@ -122,7 +123,8 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
             A[(i,t)] = var_counter
             var_counter += 1
 
-    print(f"Created S variables: {len(S)}, A variables: {len(A)}. Next var id = {var_counter}")
+    if (verbose):
+        print(f"Created S variables: {len(S)}, A variables: {len(A)}. Next var id = {var_counter}")
 
     # ------------------------
     # 2) Activation S -> A
@@ -137,7 +139,9 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
                     # clause: ¬S[i,t0] ∨ A[i,t]
                     cnf.append([-s_lit, A[(i,t)]])
                     s_to_a_clauses += 1
-    print("S->A clauses:", s_to_a_clauses)
+
+    if (verbose):
+        print("S->A clauses:", s_to_a_clauses)
 
     # ------------------------
     # 3) Capacity: at most one job active at each time t 
@@ -150,7 +154,9 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
             cnf.extend(enc.clauses)
             cap_clauses += len(enc.clauses)
             var_counter = enc.nv + 1
-    print(f"Capacity clauses: {cap_clauses}. Next var id = {var_counter}")
+
+    if(verbose):
+        print(f"Capacity clauses: {cap_clauses}. Next var id = {var_counter}")
 
     # ------------------------
     # 5) Build L variable then link it to S. This also enforces exactly one start time for each job
@@ -185,8 +191,10 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
             cnf.append([-L[(j, t)], L[(j, t - 1)], S[(j, t)]]) # Si, t <-> Li, t ^ -Li, t-1
             l_clauses += 3
 
-    print("L variables: ", l_count)
-    print("L clauses: ", l_clauses)
+    if (verbose):
+        print("L variables: ", l_count)
+        print("L clauses: ", l_clauses)
+
     # ------------------------
     # 6) Precedence constraints: For i -> j, forbid L[j,t_i + p_i - 1] when S[i,t_i] = 1
     #    only when i finish in j's valid_starts range
@@ -208,11 +216,12 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
                     continue
                 cnf.append([-S[(i,t_i)], -L[(j, finish)]])
                 prec_clauses += 1
-    print("Precedence clauses:", prec_clauses)
 
-    print("Total clauses: ", prec_clauses + l_clauses + cap_clauses + s_to_a_clauses )
-    print("Total variables: ", var_counter - 1)
+    if (verbose):
+        print("Precedence clauses:", prec_clauses)
 
+        print("Total clauses: ", prec_clauses + l_clauses + cap_clauses + s_to_a_clauses )
+        print("Total variables: ", var_counter - 1)
 
     # ------------------------
     # 7) Solve
@@ -233,7 +242,8 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors):
         if vid in model:
             schedule[i] = t
 
-    print("\nFeasible schedule found")
+    if (verbose):
+        print("Feasible schedule found")
     solver.delete()
 
     return cnf, schedule, valid_starts, S, L, is_sat
@@ -330,29 +340,33 @@ def compute_UB_Lmax(schedule, durations, due_dates):
         if L > Lmax:
             Lmax = L
 
-    print("Lmax UB: ", Lmax)
+    #print("Lmax UB: ", Lmax)
 
     return Lmax
 
-def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, ready_dates, deadlines, successors, valid_starts):
+def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_starts, verbose=False):
     solver = Solver(name='g421', bootstrap_with=cnf)
     iteration_count = 0
     var_to_S = {v: (i, t) for (i, t), v in S.items()}
+
+    print("\n=== SOLVING INCREMENTAL SAT ===")
 
     while True:
         if UB <= 0:
             break
         iteration_count += 1
-        print("\n==============================")
-        print("Trying with Lmax UB =", UB)
-        print("Iteration:", iteration_count)
+        if (verbose):
+            print("\n==============================")
+            print("Trying with Lmax UB =", UB)
+            print("Iteration:", iteration_count)
 
         for j in range(1, len(durations) + 1):
             if(due_dates[j] + UB - durations[j] - 1 < valid_starts[j][-1]):
                 solver.add_clause([L[j, due_dates[j] + UB - durations[j]] - 1])
 
         if solver.solve():
-            print("SAT")
+            if (verbose):
+                print("SAT")
             model = solver.get_model()
             best_schedule = {}
             Lmax = 0
@@ -364,20 +378,18 @@ def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, ready_da
                     if Late > Lmax:
                         Lmax = Late
                     best_schedule[i] = t
-            violations = validate_schedule(best_schedule, durations, ready_dates, deadlines, successors)
-            if len(violations) == 0:
+
+            if (verbose):
                 print("New Lmax UB:", Lmax)
-                UB = Lmax
-                with open(sol_file, "w") as f:
-                    f.write(f"Lmax = {str(UB)} \n")
-                    f.write("Schedule: \n")
-                    for i, start in sorted(best_schedule.items(), key=lambda x: x[1]):
-                        f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
-            else:
-                print(violations)
-                break
+            UB = Lmax
+            with open(sol_file, "w") as f:
+                f.write(f"Lmax = {str(UB)} \n")
+                f.write("Schedule: \n")
+                for i, start in sorted(best_schedule.items(), key=lambda x: x[1]):
+                    f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
         else:
-            print("UNSAT")
+            if (verbose):
+                print("UNSAT")
             break
 
     solver.delete()

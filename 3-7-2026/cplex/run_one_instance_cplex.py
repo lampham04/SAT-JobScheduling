@@ -19,14 +19,12 @@ def main():
     # -------- Pipeline --------
 
     # Read dataset
-    n, weights, durations, ready_dates, due_dates, deadlines, successors = \
-    read_dataset(instance_path)
+    n, durations, ready_dates, due_dates, deadlines, successors = read_dataset(instance_path)
 
     # Window tightening
-    new_ready_dates, new_deadlines = window_tightening(
-    n, ready_dates, durations, deadlines, successors
-    )
+    new_ready_dates, new_deadlines = window_tightening(n, ready_dates, durations, deadlines, successors)
 
+    # Solve
     solve_Lmax_cplex(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, time_limit)
 
 if __name__ == "__main__":

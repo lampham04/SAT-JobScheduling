@@ -84,7 +84,7 @@ def main():
 
         row = {
             "filename": fname,
-            "OUR OPT VALUE": our_ub,
+            "SAT": our_ub,
             "STATUS": status,
             "TIME (s)": round(elapsed, 2)
         }

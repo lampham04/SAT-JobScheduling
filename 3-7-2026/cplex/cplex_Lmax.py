@@ -48,7 +48,7 @@ def read_dataset(path):
         # bỏ successor > n (ví dụ job 31)
         successors[job] = [s for s in succs if s <= n]
 
-    return n, weights, durations, ready_dates, due_dates, deadlines, successors
+    return n, durations, ready_dates, due_dates, deadlines, successors
 
 
 # Tighten time window using precedence constraints
@@ -249,34 +249,13 @@ def solve_Lmax_cplex(n, durations, ready_dates, deadlines, due_dates, successors
         return
 
     schedule = {i: int(np.round(sol[S[i]])) for i in jobs}
-    violations = validate_schedule(schedule, durations, ready_dates, deadlines, successors)
 
-    if (len(violations) == 0):
-        with open(sol_file, "w") as f:
-            f.write(f"Lmax = {int(np.round(sol[Lmax]))} \n")
-            f.write("Schedule: \n")
-            for i, start in sorted(schedule.items(), key=lambda x: x[1]):
-                #print(f"Job {i}: start = {start}, end = {start + durations[i]}")
-                f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
-    else:
-        print("Violations:", violations)
-
-def read_filenames(xls_path, sheetname, instance_type):
-    df = pd.read_excel(xls_path, sheet_name=sheetname, engine="xlrd")
-
-    # normalize column names
-    df.columns = [c.strip() for c in df.columns]
-
-    # keep valid OPT values
-    df["OPT VALUE"] = pd.to_numeric(df["OPT VALUE"], errors="coerce")
-
-    df = df[
-        (df["OPT VALUE"].notna()) &
-        (df["PT"] == instance_type)
-    ]
-
-    filenames = df["filename"].astype(str).tolist()
-    return df, filenames
+    
+    with open(sol_file, "w") as f:
+        f.write(f"Lmax = {int(np.round(sol[Lmax]))} \n")
+        f.write("Schedule: \n")
+        for i, start in sorted(schedule.items(), key=lambda x: x[1]):
+            f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
 
 
 def main():
@@ -286,17 +265,13 @@ def main():
     # -------- Pipeline --------
 
     # Read dataset
-    n, weights, durations, ready_dates, due_dates, deadlines, successors = \
-    read_dataset(instance_path)
-
-    print(durations)
+    n, durations, ready_dates, due_dates, deadlines, successors = read_dataset(instance_path)
 
     # Window tightening
-    new_ready_dates, new_deadlines = window_tightening(
-    n, ready_dates, durations, deadlines, successors
-    )
+    new_ready_dates, new_deadlines = window_tightening(n, ready_dates, durations, deadlines, successors)
 
-    #solve_Lmax_cplex(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, 600)
+    # Solve
+    solve_Lmax_cplex(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, 600)
 
 if __name__ == "__main__":
     main()

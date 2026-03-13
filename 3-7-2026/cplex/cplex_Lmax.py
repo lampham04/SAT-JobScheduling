@@ -280,8 +280,8 @@ def read_filenames(xls_path, sheetname, instance_type):
 
 
 def main():
-    instance_path = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\datasets\\50-L\\50_00_005_100_75_1.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\solutions_cplex\\50-L\\50_00_005_100_75_1.GSP.txt"
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\datasets\\50-L\\50_00_005_100_50_1.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\solutions_cplex\\50-L\\50_00_005_100_50_1.GSP.txt"
 
     # -------- Pipeline --------
 
@@ -289,12 +289,14 @@ def main():
     n, weights, durations, ready_dates, due_dates, deadlines, successors = \
     read_dataset(instance_path)
 
+    print(durations)
+
     # Window tightening
     new_ready_dates, new_deadlines = window_tightening(
     n, ready_dates, durations, deadlines, successors
     )
 
-    solve_Lmax_cplex(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, 600)
+    #solve_Lmax_cplex(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, 600)
 
 if __name__ == "__main__":
     main()

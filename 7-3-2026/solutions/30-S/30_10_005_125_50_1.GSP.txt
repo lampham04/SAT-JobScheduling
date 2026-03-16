@@ -1,0 +1,32 @@
+Lmax = 64 
+Schedule: 
+Job 1: start = 3, end = 8 
+Job 3: start = 8, end = 11 
+Job 2: start = 11, end = 13 
+Job 4: start = 16, end = 21 
+Job 6: start = 22, end = 30 
+Job 5: start = 30, end = 36 
+Job 7: start = 42, end = 46 
+Job 9: start = 52, end = 54 
+Job 8: start = 54, end = 59 
+Job 13: start = 59, end = 65 
+Job 10: start = 65, end = 74 
+Job 12: start = 74, end = 75 
+Job 18: start = 75, end = 82 
+Job 11: start = 82, end = 86 
+Job 15: start = 86, end = 89 
+Job 19: start = 89, end = 97 
+Job 16: start = 97, end = 102 
+Job 17: start = 102, end = 106 
+Job 28: start = 108, end = 111 
+Job 14: start = 111, end = 116 
+Job 20: start = 116, end = 120 
+Job 25: start = 120, end = 123 
+Job 22: start = 128, end = 134 
+Job 30: start = 134, end = 142 
+Job 23: start = 142, end = 148 
+Job 21: start = 154, end = 161 
+Job 29: start = 169, end = 174 
+Job 24: start = 175, end = 178 
+Job 27: start = 181, end = 182 
+Job 26: start = 190, end = 191 

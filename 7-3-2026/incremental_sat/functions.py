@@ -231,7 +231,8 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors, verbose=False):
     is_sat = solver.solve()
 
     if not is_sat:
-        print("UNSAT — no feasible schedule.")
+        if (verbose):
+            print("UNSAT — no feasible schedule.")
         return None, None, None, None, None, is_sat
     
     model = set(solver.get_model())
@@ -362,7 +363,7 @@ def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_st
 
         for j in range(1, len(durations) + 1):
             if(due_dates[j] + UB - durations[j] - 1 < valid_starts[j][-1]):
-                solver.add_clause([L[j, due_dates[j] + UB - durations[j]] - 1])
+                solver.add_clause([L[(j, due_dates[j] + UB - durations[j] - 1)]])
 
         if solver.solve():
             if (verbose):
@@ -381,6 +382,9 @@ def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_st
 
             if (verbose):
                 print("New Lmax UB:", Lmax)
+                if (UB == Lmax):
+                    print("Warning: UB not decreasing, possible bug.")
+
             UB = Lmax
             with open(sol_file, "w") as f:
                 f.write(f"Lmax = {str(UB)} \n")

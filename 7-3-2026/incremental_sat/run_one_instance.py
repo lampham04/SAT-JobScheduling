@@ -40,6 +40,12 @@ def main():
     # Initial UB
     UB = compute_UB_Lmax(schedule, durations, due_dates)
 
+    with open(sol_file, "w") as f:
+        f.write(f"Lmax = {str(UB)} \n")
+        f.write("Schedule: \n")
+        for i, start in sorted(schedule.items(), key=lambda x: x[1]):
+            f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
+
     # Incremental SAT
     incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_starts)
 

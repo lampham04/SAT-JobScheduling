@@ -14,7 +14,7 @@ def main():
 
     instance_path = Path(sys.argv[1])
     sol_file = Path(sys.argv[2])
-    time_limit = 598
+    time_limit = 597
 
     # -------- Pipeline --------
 

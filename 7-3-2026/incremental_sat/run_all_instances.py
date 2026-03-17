@@ -10,11 +10,11 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
-DATA_DIR = BASE_DIR / ".." / "datasets" / "40-S"
-SOLUTION_DIR = BASE_DIR / ".." / "solutions" / "40-S"
+DATA_DIR = BASE_DIR / ".." / "datasets" / "50-S"
+SOLUTION_DIR = BASE_DIR / ".." / "solutions" / "50-S"
 
-INSTANCE_NAME_FILE = BASE_DIR / ".." / "filenames" / "40-S.txt"
-RESULT_CSV = BASE_DIR / ".." / "results" / "results_SAT_40-S.csv"
+INSTANCE_NAME_FILE = BASE_DIR / ".." / "filenames" / "50-S.txt"
+RESULT_CSV = BASE_DIR / ".." / "results" / "results_SAT_50-S.csv"
 
 TIMEOUT = 300  # seconds
 
@@ -85,8 +85,8 @@ def main():
         row = {
             "filename": fname,
             "SAT": our_ub,
-            "STATUS": status,
-            "TIME (s)": round(elapsed, 2)
+            "TIME (s)": round(elapsed, 2),
+            "STATUS": status
         }
 
         pd.DataFrame([row]).to_csv(

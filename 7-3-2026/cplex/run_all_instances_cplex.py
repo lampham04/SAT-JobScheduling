@@ -10,13 +10,13 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
-DATA_DIR = BASE_DIR / ".." / "datasets" / "50-L"
-SOLUTION_DIR   = BASE_DIR / ".." / "solutions_cplex" / "50-L"
+DATA_DIR = BASE_DIR / ".." / "datasets" / "50-S"
+SOLUTION_DIR   = BASE_DIR / ".." / "solutions_cp" / "50-S"
 
-INSTANCE_NAME_FILE = BASE_DIR / ".." / "filenames" / "50-L.txt"
-RESULT_CSV = BASE_DIR / ".." / "results" / "results_CPLEX_L_variable_50-L.csv"
+INSTANCE_NAME_FILE = BASE_DIR / ".." / "filenames" / "50-S.txt"
+RESULT_CSV = BASE_DIR / ".." / "results" / "results_CPLEX_CP_S.csv"
 
-TIMEOUT = 600  # seconds
+TIMEOUT = 300  # seconds
 
 def main():
 
@@ -83,8 +83,8 @@ def main():
         row = {
             "filename": fname,
             "CPLEX": our_ub,
-            "STATUS": status,
-            "TIME (s)": round(elapsed, 2)
+            "TIME (s)": round(elapsed, 2),
+            "STATUS": status
         }
 
         pd.DataFrame([row]).to_csv(

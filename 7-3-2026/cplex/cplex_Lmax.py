@@ -2,6 +2,7 @@ from docplex.mp.model import Model
 import numpy as np
 from collections import deque
 import pandas as pd
+from docplex.cp.model import CpoModel
 
 ### Read in dataset
 def read_dataset(path):
@@ -258,9 +259,78 @@ def solve_Lmax_cplex(n, durations, ready_dates, deadlines, due_dates, successors
             f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
 
 
+
+def solve_CP(n, durations, ready_dates, deadlines, due_dates, successors, sol_file, time_limit):
+    jobs = list(range(1, n + 1))
+    
+    model = CpoModel()
+    
+    # ------------------------
+    # 1) Decision variables — interval var per job
+    # ------------------------
+    tasks = {}
+    for i in jobs:
+        tasks[i] = model.interval_var(
+            size=durations[i],
+            start=(ready_dates[i], deadlines[i] - durations[i]),  # start in [ready, last_valid_start]
+            end=(ready_dates[i] + durations[i], deadlines[i]),     # end in [earliest_end, deadline]
+            name=f"task_{i}"
+        )
+    
+    # ------------------------
+    # 2) No overlap — single machine
+    # ------------------------
+    model.add(model.no_overlap(tasks.values()))
+
+    # ------------------------
+    # 3) Precedence constraints
+    # ------------------------
+    for i in jobs:
+        for j in successors.get(i, []):
+            model.add(model.end_before_start(tasks[i], tasks[j]))
+
+    # ------------------------
+    # 4) Minimize Lmax
+    # ------------------------
+    lmax = model.integer_var(min=0, name="Lmax")
+    for i in jobs:
+        tardiness = model.max([0, model.end_of(tasks[i]) - due_dates[i]])
+        model.add(lmax >= tardiness)
+    
+    model.minimize(lmax)
+
+    # ------------------------
+    # 5) Solve
+    # ------------------------
+    print("\n=== SOLVING CP ===")
+    solution = model.solve(TimeLimit=time_limit, LogVerbosity="Quiet")
+
+    if solution:
+        schedule = {}
+        for i in jobs:
+            start = solution.get_var_solution(tasks[i]).get_start()
+            schedule[i] = start
+
+        lmax_value = solution.get_var_solution(lmax).get_value()
+        print(f"Lmax = {lmax_value}")
+
+        violations = validate_schedule(schedule, durations, ready_dates, deadlines, successors)
+        if (len(violations) > 0):
+            print(violations)
+            return
+        
+        with open(sol_file, "w") as f:
+            f.write(f"Lmax = {lmax_value} \n")
+            f.write("Schedule: \n")
+            for i, start in sorted(schedule.items(), key=lambda x: x[1]):
+                f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
+    else:
+        print("No solution found")
+        return
+
 def main():
-    instance_path = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\datasets\\50-L\\50_00_005_100_50_1.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\Job_Scheduling\data\solutions_cplex\\50-L\\50_00_005_100_50_1.GSP.txt"
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\40-S\\40_05_005_125_25_1.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_cplex\\40-S\\40_05_005_125_25_1.GSP.txt"
 
     # -------- Pipeline --------
 
@@ -271,7 +341,7 @@ def main():
     new_ready_dates, new_deadlines = window_tightening(n, ready_dates, durations, deadlines, successors)
 
     # Solve
-    solve_Lmax_cplex(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, 600)
+    solve_CP(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, 300)
 
 if __name__ == "__main__":
     main()

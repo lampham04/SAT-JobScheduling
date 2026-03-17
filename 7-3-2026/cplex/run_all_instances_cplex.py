@@ -14,7 +14,7 @@ DATA_DIR = BASE_DIR / ".." / "datasets" / "50-S"
 SOLUTION_DIR   = BASE_DIR / ".." / "solutions_cp" / "50-S"
 
 INSTANCE_NAME_FILE = BASE_DIR / ".." / "filenames" / "50-S.txt"
-RESULT_CSV = BASE_DIR / ".." / "results" / "results_CPLEX_CP_S.csv"
+RESULT_CSV = BASE_DIR / ".." / "results" / "results_CPLEX_MP_S.csv"
 
 TIMEOUT = 300  # seconds
 

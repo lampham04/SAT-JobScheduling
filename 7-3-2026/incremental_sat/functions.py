@@ -401,3 +401,40 @@ def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_st
     print("Best Lmax UB found:", UB)
 
 
+
+
+def main():
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\40-S\\40_05_005_100_25_1.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions\\40-S\\40_05_005_100_25_1.GSP.txt"
+
+    # Read dataset
+    n, durations, ready_dates, due_dates, deadlines, successors = read_dataset(instance_path)
+
+    # Window tightening
+    new_ready_dates, new_deadlines = window_tightening(
+        n, ready_dates, durations, deadlines, successors
+    )
+
+    # Initial SAT solve
+    cnf, schedule, valid_starts, S, L, is_sat = solve_SAT(
+        n, durations, new_ready_dates, new_deadlines, successors
+    )
+
+    if not is_sat:
+        sol_file.write_text("UNSAT")
+        return
+
+    # Initial UB
+    UB = compute_UB_Lmax(schedule, durations, due_dates)
+
+    with open(sol_file, "w") as f:
+        f.write(f"Lmax = {str(UB)} \n")
+        f.write("Schedule: \n")
+        for i, start in sorted(schedule.items(), key=lambda x: x[1]):
+            f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
+
+    # Incremental SAT
+    incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_starts, verbose=True)
+
+if __name__ == "__main__":
+    main()

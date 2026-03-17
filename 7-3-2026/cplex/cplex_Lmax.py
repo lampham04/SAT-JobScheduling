@@ -172,7 +172,7 @@ def validate_schedule(
     # -------------------------
     return violations
 
-def solve_Lmax_cplex(n, durations, ready_dates, deadlines, due_dates, successors, sol_file, time_limit):
+def solve_MP(n, durations, ready_dates, deadlines, due_dates, successors, sol_file, time_limit):
     """
     Single machine scheduling with r_i, deadline_i, precedence
     Objective: minimize Lmax

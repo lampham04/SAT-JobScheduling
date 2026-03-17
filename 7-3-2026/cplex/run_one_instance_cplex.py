@@ -6,7 +6,7 @@ from cplex_Lmax import (
     window_tightening
 )
 from cplex_Lmax import (
-    solve_Lmax_cplex,
+    solve_MP,
     solve_CP
 )
 
@@ -25,10 +25,10 @@ def main():
     n, durations, ready_dates, due_dates, deadlines, successors = read_dataset(instance_path)
 
     # Window tightening
-    #new_ready_dates, new_deadlines = window_tightening(n, ready_dates, durations, deadlines, successors)
+    new_ready_dates, new_deadlines = window_tightening(n, ready_dates, durations, deadlines, successors)
 
     # Solve
-    solve_CP(n, durations, ready_dates, deadlines, due_dates, successors, sol_file, time_limit)
+    solve_MP(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, time_limit)
 
 if __name__ == "__main__":
     main()

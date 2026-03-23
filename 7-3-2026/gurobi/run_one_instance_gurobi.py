@@ -1,13 +1,11 @@
 # run_one_instance.py
 import sys
 from pathlib import Path
-from cplex_functions import (
+from gurobi_functions import (
     read_dataset,
     window_tightening,
-    solve_CP,
-    solve_MP
+    solve_gurobi
 )
-
 
 def main():
     if len(sys.argv) != 3:
@@ -24,10 +22,10 @@ def main():
     n, durations, ready_dates, due_dates, deadlines, successors = read_dataset(instance_path)
 
     # Window tightening
-    new_ready_dates, new_deadlines = window_tightening(n, ready_dates, durations, deadlines, successors)
+    #new_ready_dates, new_deadlines = window_tightening(n, ready_dates, durations, deadlines, successors)
 
     # Solve
-    solve_MP(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, time_limit)
+    solve_gurobi(n, durations, ready_dates, deadlines, due_dates, successors, sol_file, time_limit)
 
 if __name__ == "__main__":
     main()

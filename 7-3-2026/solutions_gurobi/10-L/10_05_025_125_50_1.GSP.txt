@@ -1,0 +1,12 @@
+Lmax = 214 
+Schedule: 
+Job 4: start = 43, end = 52 
+Job 1: start = 74, end = 79 
+Job 2: start = 79, end = 129 
+Job 3: start = 129, end = 157 
+Job 5: start = 157, end = 172 
+Job 7: start = 172, end = 201 
+Job 8: start = 201, end = 246 
+Job 9: start = 246, end = 254 
+Job 6: start = 254, end = 354 
+Job 10: start = 354, end = 444 

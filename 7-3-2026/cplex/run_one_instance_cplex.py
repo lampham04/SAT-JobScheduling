@@ -28,6 +28,7 @@ def main():
 
     # Solve
     solve_MP(n, durations, new_ready_dates, new_deadlines, due_dates, successors, sol_file, time_limit)
+    #solve_CP(n, durations, ready_dates, deadlines, due_dates, successors, sol_file, time_limit)
 
 if __name__ == "__main__":
     main()

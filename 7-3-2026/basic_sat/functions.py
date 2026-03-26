@@ -111,19 +111,26 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors, verbose=False):
             S[(i, t)] = var_counter
             var_counter += 1
 
+    if (verbose):
+        print("S variables:", var_counter - 1)
+
     # ------------------------
     # 2) Exactly one start per job
     # ------------------------
+    if (verbose):
+        print("Encoding exactly one start")
     for i in jobs:
         lits = [S[(i, t)] for t in valid_starts[i]]
         enc = CardEnc.equals(lits=lits, bound=1, encoding=EncType.seqcounter, top_id=var_counter-1)
         cnf.extend(enc.clauses)
         var_counter = enc.nv + 1
 
-
     # ------------------------
     # 3) No overlap — pairwise
     # ------------------------
+    if (verbose):
+        print("Encoding non overlap")
+    non_overlap_cls = 0
     for i in jobs:
         for j in jobs:
             if i >= j:
@@ -133,17 +140,25 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors, verbose=False):
                     # check if i and j overlap
                     if not (t_i + durations[i] <= t_j or t_j + durations[j] <= t_i):
                         cnf.append([-S[(i, t_i)], -S[(j, t_j)]])
+                        non_overlap_cls += 1
+    if (verbose):
+        print("Non overlap clauses:", non_overlap_cls)
 
     # ------------------------
     # 4) Precedence
     # ------------------------
+    if (verbose):
+        print("Encoding precedence")
+    prec_cls = 0
     for i in jobs:
         for j in successors.get(i, []):
             for t_i in valid_starts[i]:
                 for t_j in valid_starts[j]:
                     if t_j < t_i + durations[i]:
                         cnf.append([-S[(i, t_i)], -S[(j, t_j)]])
-
+                        prec_cls += 1
+    if (verbose):
+        print("Precedence clauses:", prec_cls)
 
     # ------------------------
     # 7) Solve
@@ -327,8 +342,8 @@ def incremental_SAT_Lmax(durations, due_dates, S, cnf, UB, sol_file, valid_start
 
 
 def main():
-    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\10-S\\10_05_005_100_25_1.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_basic_sat\\10-S\\10_05_005_100_25_1.GSP.txt"
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\40-L\\40_05_025_100_50_1.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_basic_sat\\40-L\\40_05_025_100_50_1.GSP.txt"
 
     # Read dataset
     n, durations, ready_dates, due_dates, deadlines, successors = read_dataset(instance_path)
@@ -340,7 +355,7 @@ def main():
 
     # Initial SAT solve
     cnf, schedule, valid_starts, S, is_sat = solve_SAT(
-        n, durations, new_ready_dates, new_deadlines, successors
+        n, durations, new_ready_dates, new_deadlines, successors, verbose=True
     )
 
     if not is_sat:

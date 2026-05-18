@@ -1,11 +1,11 @@
-Lmax = 0 
+Lmax = -8 
 Schedule: 
 Job 1: start = 72, end = 164 
 Job 3: start = 175, end = 183 
-Job 4: start = 184, end = 274 
-Job 2: start = 287, end = 378 
+Job 4: start = 187, end = 277 
+Job 7: start = 278, end = 304 
+Job 2: start = 307, end = 398 
 Job 5: start = 411, end = 462 
-Job 7: start = 472, end = 498 
 Job 9: start = 511, end = 553 
 Job 13: start = 565, end = 608 
 Job 12: start = 621, end = 645 
@@ -35,8 +35,8 @@ Job 30: start = 1859, end = 1916
 Job 31: start = 1946, end = 2021 
 Job 38: start = 2022, end = 2060 
 Job 34: start = 2089, end = 2095 
-Job 39: start = 2100, end = 2119 
-Job 35: start = 2129, end = 2133 
+Job 39: start = 2096, end = 2115 
+Job 35: start = 2121, end = 2125 
 Job 40: start = 2251, end = 2268 
 Job 36: start = 2271, end = 2327 
-Job 37: start = 2386, end = 2392 
+Job 37: start = 2373, end = 2379 

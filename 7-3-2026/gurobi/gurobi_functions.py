@@ -189,7 +189,7 @@ def solve_gurobi(n, durations, ready_dates, deadlines, due_dates, successors, so
             name=f"start_{i}"
         )
 
-    lmax = model.addVar(lb=0, vtype=GRB.CONTINUOUS, name="Lmax")
+    lmax = model.addVar(lb=-99999, vtype=GRB.CONTINUOUS, name="Lmax")
 
     # ------------------------
     # 2) No overlap
@@ -250,8 +250,8 @@ def solve_gurobi(n, durations, ready_dates, deadlines, due_dates, successors, so
         return None, None
 
 def main():
-    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\10-S\\10_05_005_100_25_1.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_gurobi\\10-S\\10_05_005_100_25_1.GSP.txt"
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\50-L\\50_10_025_125_50_1.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_gurobi\\50-L\\50_10_025_125_50_1.GSP.txt"
 
     # -------- Pipeline --------
 

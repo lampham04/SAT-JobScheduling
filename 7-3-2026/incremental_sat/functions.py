@@ -335,13 +335,11 @@ def validate_schedule(
     return violations
 
 def compute_UB_Lmax(schedule, durations, due_dates):
-    Lmax = 0
+    Lmax = -99999
     for i in schedule:
-        L = max(0, schedule[i] + durations[i] - due_dates[i])
+        L = schedule[i] + durations[i] - due_dates[i]
         if L > Lmax:
             Lmax = L
-
-    #print("Lmax UB: ", Lmax)
 
     return Lmax
 
@@ -353,8 +351,6 @@ def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_st
     print("\n=== SOLVING INCREMENTAL SAT ===")
 
     while True:
-        if UB <= 0:
-            break
         iteration_count += 1
         if (verbose):
             print("\n==============================")
@@ -370,12 +366,12 @@ def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_st
                 print("SAT")
             model = solver.get_model()
             best_schedule = {}
-            Lmax = 0
+            Lmax = -99999
 
             for j in range(0, len(S)):
                 if model[j] > 0:
                     i, t = var_to_S[model[j]]
-                    Late = max(0, t + durations[i] - due_dates[i])
+                    Late = t + durations[i] - due_dates[i]
                     if Late > Lmax:
                         Lmax = Late
                     best_schedule[i] = t
@@ -404,8 +400,8 @@ def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_st
 
 
 def main():
-    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\40-S\\40_05_005_100_25_1.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions\\40-S\\40_05_005_100_25_1.GSP.txt"
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\50-L\\50_10_025_125_50_1.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions\\50-L\\50_10_025_125_50_1.GSP.txt"
 
     # Read dataset
     n, durations, ready_dates, due_dates, deadlines, successors = read_dataset(instance_path)
@@ -417,7 +413,7 @@ def main():
 
     # Initial SAT solve
     cnf, schedule, valid_starts, S, L, is_sat = solve_SAT(
-        n, durations, new_ready_dates, new_deadlines, successors
+        n, durations, new_ready_dates, new_deadlines, successors, verbose=True
     )
 
     if not is_sat:

@@ -1,14 +1,14 @@
-Lmax = 0 
+Lmax = -8 
 Schedule: 
 Job 1: start = 50, end = 142 
 Job 3: start = 151, end = 159 
 Job 4: start = 159, end = 249 
 Job 2: start = 249, end = 340 
-Job 5: start = 340, end = 391 
+Job 7: start = 365, end = 391 
 Job 6: start = 391, end = 468 
-Job 7: start = 469, end = 495 
-Job 12: start = 502, end = 526 
-Job 9: start = 526, end = 568 
+Job 5: start = 474, end = 525 
+Job 9: start = 525, end = 567 
+Job 12: start = 567, end = 591 
 Job 13: start = 607, end = 650 
 Job 8: start = 680, end = 687 
 Job 14: start = 692, end = 755 
@@ -27,16 +27,16 @@ Job 24: start = 1441, end = 1532
 Job 25: start = 1532, end = 1611 
 Job 26: start = 1613, end = 1661 
 Job 27: start = 1663, end = 1735 
-Job 28: start = 1739, end = 1790 
-Job 29: start = 1795, end = 1831 
-Job 32: start = 1833, end = 1836 
-Job 30: start = 1842, end = 1899 
-Job 33: start = 1943, end = 1973 
-Job 31: start = 1975, end = 2050 
-Job 34: start = 2054, end = 2060 
-Job 38: start = 2060, end = 2098 
-Job 39: start = 2099, end = 2118 
+Job 29: start = 1765, end = 1801 
+Job 32: start = 1801, end = 1804 
+Job 30: start = 1815, end = 1872 
+Job 28: start = 1883, end = 1934 
+Job 33: start = 1934, end = 1964 
+Job 31: start = 1964, end = 2039 
+Job 38: start = 2044, end = 2082 
+Job 34: start = 2082, end = 2088 
+Job 39: start = 2090, end = 2109 
 Job 35: start = 2118, end = 2122 
 Job 37: start = 2122, end = 2128 
-Job 36: start = 2128, end = 2184 
-Job 40: start = 2257, end = 2274 
+Job 36: start = 2148, end = 2204 
+Job 40: start = 2218, end = 2235 

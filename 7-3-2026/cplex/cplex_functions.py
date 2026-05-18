@@ -185,7 +185,7 @@ def solve_MP(n, durations, ready_dates, deadlines, due_dates, successors, sol_fi
     # Variables
     # -----------------------
     S = {i: mdl.continuous_var(lb=0, name=f"S_{i}") for i in jobs}
-    Lmax = mdl.continuous_var(lb=0, name="Lmax")
+    Lmax = mdl.continuous_var(lb=-99999, name="Lmax")
 
     # ordering variables for machine capacity
     x = {}
@@ -257,6 +257,7 @@ def solve_MP(n, durations, ready_dates, deadlines, due_dates, successors, sol_fi
         f.write("Schedule: \n")
         for i, start in sorted(schedule.items(), key=lambda x: x[1]):
             f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
+    print(f"Lmax = {int(np.round(sol[Lmax]))} \n")
 
 
 
@@ -292,9 +293,9 @@ def solve_CP(n, durations, ready_dates, deadlines, due_dates, successors, sol_fi
     # ------------------------
     # 4) Minimize Lmax
     # ------------------------
-    lmax = model.integer_var(min=0, name="Lmax")
+    lmax = model.integer_var(min=-99999, name="Lmax")
     for i in jobs:
-        tardiness = model.max([0, model.end_of(tasks[i]) - due_dates[i]])
+        tardiness = model.max(model.end_of(tasks[i]) - due_dates[i])
         model.add(lmax >= tardiness)
     
     model.minimize(lmax)
@@ -329,10 +330,10 @@ def solve_CP(n, durations, ready_dates, deadlines, due_dates, successors, sol_fi
         return
 
 def main():
-    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\40-S\\40_05_005_125_25_1.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_cp\\40-S\\40_05_005_125_25_1.GSP.txt"
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\50-L\\50_10_025_125_50_1.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_cp\\50-L\\50_10_025_125_50_1.GSP.txt"
 
-    # -------- Pipeline --------
+    # -------- Pipeline --------    
 
     # Read dataset
     n, durations, ready_dates, due_dates, deadlines, successors = read_dataset(instance_path)

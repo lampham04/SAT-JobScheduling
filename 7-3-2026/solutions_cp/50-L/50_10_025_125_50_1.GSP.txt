@@ -1,4 +1,4 @@
-Lmax = 0 
+Lmax = -5 
 Schedule: 
 Job 1: start = 42, end = 120 
 Job 2: start = 120, end = 196 

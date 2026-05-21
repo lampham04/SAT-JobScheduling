@@ -11,10 +11,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 
 DATA_DIR = BASE_DIR / ".." / "datasets" / "50-L"
-SOLUTION_DIR = BASE_DIR / ".." / "solutions" / "50-L"
+SOLUTION_DIR = BASE_DIR / ".." / "solutions_baseline_sat" / "50-L"
 
 INSTANCE_NAME_FILE = BASE_DIR / ".." / "filenames" / "50.txt"
-RESULT_CSV = BASE_DIR / ".." / "results" / "L" / "results_SAT_L.csv"
+RESULT_CSV = BASE_DIR / ".." / "results" / "L" / "results_baseline_SAT_L.csv"
 
 TIMEOUT = 300  # seconds
 

@@ -88,77 +88,140 @@ def window_tightening(n, ready_dates, durations, deadlines, successors):
 
 # Solve for SAT
 def solve_SAT(n, durations, ready_dates, deadlines, successors, verbose=False):
-    jobs = list(range(1, n + 1))
+    jobs = list(range(1, n+1))
     horizon = max(deadlines.values())
 
     cnf = CNF()
-    var_counter = 1
+    var_counter = 1    # next free var id
 
-    # ------------------------
-    # 1) S variables
-    # ------------------------
+    # Dictionaries mapping (i,t) -> var_id
     S = {}
+    A = {}
+    L = {}
     valid_starts = {}
 
+    # ------------------------
+    # 1) CREATE S and A variables
+    # ------------------------
     for i in jobs:
         last_start = deadlines[i] - durations[i]
         if last_start < ready_dates[i]:
-            print(f"Job {i} infeasible")
-            return None, None, None, None, False
+            if (verbose):
+                print(f"Job {i} impossible: last_start < ready ({last_start} < {ready_dates[i]})")
+            return None, None, None, None, None, False
 
         valid_starts[i] = list(range(ready_dates[i], last_start + 1))
+
         for t in valid_starts[i]:
-            S[(i, t)] = var_counter
+            # S variables
+            S[(i,t)] = var_counter
+            var_counter += 1
+
+    for i in jobs:
+        # A variables
+        for t in range(ready_dates[i], deadlines[i]):
+            A[(i,t)] = var_counter
             var_counter += 1
 
     if (verbose):
-        print("S variables:", var_counter - 1)
+        print(f"Created S variables: {len(S)}, A variables: {len(A)}. Next var id = {var_counter}")
 
     # ------------------------
-    # 2) Exactly one start per job
+    # 2) Activation S -> A
     # ------------------------
-    if (verbose):
-        print("Encoding exactly one start")
+    s_to_a_clauses = 0
     for i in jobs:
-        lits = [S[(i, t)] for t in valid_starts[i]]
-        enc = CardEnc.equals(lits=lits, bound=1, encoding=EncType.seqcounter, top_id=var_counter-1)
-        cnf.extend(enc.clauses)
-        var_counter = enc.nv + 1
+        p_i = durations[i]
+        for t0 in valid_starts[i]:
+            s_lit = S[(i,t0)]
+            for t in range(t0, t0 + p_i):
+                if (i,t) in A:
+                    # clause: ¬S[i,t0] ∨ A[i,t]
+                    cnf.append([-s_lit, A[(i,t)]])
+                    s_to_a_clauses += 1
+
+    if (verbose):
+        print("S->A clauses:", s_to_a_clauses)
 
     # ------------------------
-    # 3) No overlap — pairwise
+    # 3) Capacity: at most one job active at each time t 
     # ------------------------
-    if (verbose):
-        print("Encoding non overlap")
-    non_overlap_cls = 0
-    for i in jobs:
-        for j in jobs:
-            if i >= j:
-                continue
-            for t_i in valid_starts[i]:
-                for t_j in valid_starts[j]:
-                    # check if i and j overlap
-                    if not (t_i + durations[i] <= t_j or t_j + durations[j] <= t_i):
-                        cnf.append([-S[(i, t_i)], -S[(j, t_j)]])
-                        non_overlap_cls += 1
-    if (verbose):
-        print("Non overlap clauses:", non_overlap_cls)
+    cap_clauses = 0
+    for t in range(horizon):
+        active_vars = [A[(i,t)] for i in jobs if (i,t) in A]
+        if len(active_vars) > 1:
+            enc = CardEnc.atmost(lits=active_vars, bound=1, encoding=EncType.seqcounter, top_id=var_counter-1)
+            cnf.extend(enc.clauses)
+            cap_clauses += len(enc.clauses)
+            var_counter = enc.nv + 1
+
+    if(verbose):
+        print(f"Capacity clauses: {cap_clauses}. Next var id = {var_counter}")
 
     # ------------------------
-    # 4) Precedence
+    # 5) Build L variable then link it to S. This also enforces exactly one start time for each job
     # ------------------------
+    l_count = 0
+    l_clauses = 0
+
+    for j in jobs:
+        times = valid_starts[j]
+        if not times:
+            continue
+        t_min = times[0]
+        t_max = times[-1]
+
+        # create L variables for t_min..t_max
+        for t in range(t_min, t_max + 1):
+            L[(j,t)] = var_counter
+            var_counter += 1
+            l_count += 1
+
+        cnf.append([L[(j, t_max)]]) # L_i, t_max = 1
+        cnf.append([-L[(j, t_min)], S[(j, t_min)]]) # L_i, 1 -> S_i, 1
+        l_clauses += 2
+
+        for t in range(t_min, t_max + 1):
+            cnf.append([L[(j, t)], -S[(j ,t)]]) # S_i, t -> L_i, t
+            l_clauses += 1
+
+        for t in range(t_min + 1, t_max + 1):
+            cnf.append([-S[(j, t)], -L[(j, t - 1)]])
+            cnf.append([L[(j, t)], -L[(j, t - 1)]])
+            cnf.append([-L[(j, t)], L[(j, t - 1)], S[(j, t)]]) # Si, t <-> Li, t ^ -Li, t-1
+            l_clauses += 3
+
     if (verbose):
-        print("Encoding precedence")
-    prec_cls = 0
+        print("L variables: ", l_count)
+        print("L clauses: ", l_clauses)
+
+    # ------------------------
+    # 6) Precedence constraints: For i -> j, forbid L[j,t_i + p_i - 1] when S[i,t_i] = 1
+    #    only when i finish in j's valid_starts range
+    # ------------------------
+    prec_clauses = 0
     for i in jobs:
         for j in successors.get(i, []):
+            if not valid_starts[i] or not valid_starts[j]:
+                # infeasible handled earlier
+                continue
+            t_min_j = valid_starts[j][0]
+            t_max_j = valid_starts[j][-1]
+            p_i = durations[i]
+
             for t_i in valid_starts[i]:
-                for t_j in valid_starts[j]:
-                    if t_j < t_i + durations[i]:
-                        cnf.append([-S[(i, t_i)], -S[(j, t_j)]])
-                        prec_cls += 1
+                finish = t_i + p_i - 1
+                # Only add clause if finish lies within j's valid_starts range
+                if finish < t_min_j or finish > t_max_j:
+                    continue
+                cnf.append([-S[(i,t_i)], -L[(j, finish)]])
+                prec_clauses += 1
+
     if (verbose):
-        print("Precedence clauses:", prec_cls)
+        print("Precedence clauses:", prec_clauses)
+
+        print("Total clauses: ", prec_clauses + l_clauses + cap_clauses + s_to_a_clauses )
+        print("Total variables: ", var_counter - 1)
 
     # ------------------------
     # 7) Solve
@@ -170,7 +233,7 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors, verbose=False):
     if not is_sat:
         if (verbose):
             print("UNSAT — no feasible schedule.")
-        return None, None, None, None, is_sat
+        return None, None, None, None, None, is_sat
     
     model = set(solver.get_model())
 
@@ -184,7 +247,7 @@ def solve_SAT(n, durations, ready_dates, deadlines, successors, verbose=False):
         print("Feasible schedule found")
     solver.delete()
 
-    return cnf, schedule, valid_starts, S, is_sat
+    return cnf, schedule, valid_starts, S, L, is_sat
 
 def validate_schedule(
     schedule,
@@ -278,11 +341,9 @@ def compute_UB_Lmax(schedule, durations, due_dates):
         if L > Lmax:
             Lmax = L
 
-    #print("Lmax UB: ", Lmax)
-
     return Lmax
 
-def incremental_SAT_Lmax(durations, due_dates, S, cnf, UB, sol_file, valid_starts, verbose=False):
+def incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_starts, verbose=False):
     solver = Solver(name='g421', bootstrap_with=cnf)
     iteration_count = 0
     var_to_S = {v: (i, t) for (i, t), v in S.items()}
@@ -296,10 +357,9 @@ def incremental_SAT_Lmax(durations, due_dates, S, cnf, UB, sol_file, valid_start
             print("Trying with Lmax UB =", UB)
             print("Iteration:", iteration_count)
 
-        # add not S[i,t] that can violate Lmax UB for each iteration
-        for (i, t), var in S.items():
-            if t + durations[i] - due_dates[i] >= UB:
-                solver.add_clause([-var]) 
+        for j in range(1, len(durations) + 1):
+            if(due_dates[j] + UB - durations[j] - 1 < valid_starts[j][-1]):
+                solver.add_clause([L[(j, due_dates[j] + UB - durations[j] - 1)]])
 
         if solver.solve():
             if (verbose):
@@ -341,7 +401,7 @@ def incremental_SAT_Lmax(durations, due_dates, S, cnf, UB, sol_file, valid_start
 
 def main():
     instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\50-L\\50_10_025_125_50_1.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_basic_sat\\50-L\\50_10_025_125_50_1.GSP.txt"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_proposed_SAT\\50-L\\50_10_025_125_50_1.GSP.txt"
 
     # Read dataset
     n, durations, ready_dates, due_dates, deadlines, successors = read_dataset(instance_path)
@@ -352,7 +412,7 @@ def main():
     )
 
     # Initial SAT solve
-    cnf, schedule, valid_starts, S, is_sat = solve_SAT(
+    cnf, schedule, valid_starts, S, L, is_sat = solve_SAT(
         n, durations, new_ready_dates, new_deadlines, successors, verbose=True
     )
 
@@ -370,7 +430,7 @@ def main():
             f.write(f"Job {i}: start = {start}, end = {start + durations[i]} \n")
 
     # Incremental SAT
-    incremental_SAT_Lmax(durations, due_dates, S, cnf, UB, sol_file, valid_starts, verbose=True)
+    incremental_SAT_Lmax(durations, due_dates, S, L, cnf, UB, sol_file, valid_starts, verbose=True)
 
 if __name__ == "__main__":
     main()

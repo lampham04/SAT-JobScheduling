@@ -94,20 +94,7 @@ def validate_schedule(
     deadlines,
     successors
 ):
-    """
-    Validate a schedule for hard constraints.
-
-    schedule   : dict {job: start_time}
-    jobs       : list of jobs
-    durations  : dict {job: p_i}
-    ready_dates: dict {job: r_i}
-    deadlines  : dict {job: δ_i}
-    successors : dict {i: [j1, j2, ...]}
-
-    Returns:
-        (is_valid: bool, violations: list of strings)
-    """
-
+ 
     jobs = list(range(1, len(schedule) + 1))
     violations = []
 
@@ -330,8 +317,8 @@ def solve_CP(n, durations, ready_dates, deadlines, due_dates, successors, sol_fi
         return
 
 def main():
-    instance_path = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\datasets\\50-L\\50_10_025_125_50_1.GSP"
-    sol_file = r"C:\Users\LamPham\Desktop\Lab\\7-3-2026\solutions_cp\\50-L\\50_10_025_125_50_1.GSP.txt"
+    instance_path = r"C:\Users\LamPham\Desktop\Lab\experimental_benchmark\datasets\\50-L\\50_10_025_125_50_1.GSP"
+    sol_file = r"C:\Users\LamPham\Desktop\Lab\experimental_benchmark\solutions_cp\\50-L\\50_10_025_125_50_1.GSP.txt"
 
     # -------- Pipeline --------    
 
